@@ -1,0 +1,3 @@
+---
+- include: install_docker.yml
+- include: run_web_sites.yml
