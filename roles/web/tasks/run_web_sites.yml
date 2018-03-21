@@ -13,9 +13,15 @@
     dest: "/home/{{ docker_user }}/containers/"
     version: {{ repository_version }}
 
-- name: Creates docker-compose.yml file
+- name: Creates .env file
   template:
-    src: docker-compose.yml.j2
-    dest: /home/{{ docker_user }}/containers/{{ item }}
-  with_items: "{{ enabled_sites }}"
-  when: enabled_sites
+    src: env.j2
+    dest: /home/{{ docker_user }}/containers/{{ item.site_name }}/.env
+  with_items: "{{ sites }}"
+  when: sites
+
+- name: Run the service defined in my project
+  docker_service:
+    project_src: /home/{{ docker_user }}/containers/{{ item.site_name }}
+  with_items: "{{ sites }}"
+  when: sites
