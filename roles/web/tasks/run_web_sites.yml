@@ -1,27 +1,47 @@
 ---
 
-- name: Create Docker Compose project directory
-  file:
-    path: /home/{{ docker_user }}/containers
-    owner: jangosto
-    state: directory
-    mode: 0755
+- block:
+    - name: Create Docker Compose project directory
+      file:
+        path: "/home/{{ docker_user }}/containers"
+#        owner: jangosto
+        state: directory
+        mode: 0755
 
-- name: Copy the code from repository
-  git:
-    repo: {{ repository }}
-    dest: "/home/{{ docker_user }}/containers/"
-    version: {{ repository_version }}
+    - name: Create .ssh directory
+      file:
+        path: "/home/{{ docker_user }}/.ssh"
+#        owner: jangosto
+        state: directory
+        mode: 0700
 
-- name: Creates .env file
-  template:
-    src: env.j2
-    dest: /home/{{ docker_user }}/containers/{{ item.site_name }}/.env
-  with_items: "{{ sites }}"
-  when: sites
+    - name: Ensure pub and private keys are present
+      copy:
+        src: "~/.ssh/{{ item }}"
+        dest: "/home/{{ docker_user }}/.ssh/{{ item }}"
+        mode: 0600
+      with_items:
+        - id_rsa.pub
+        - id_rsa
 
-- name: Run the service defined in my project
-  docker_service:
-    project_src: /home/{{ docker_user }}/containers/{{ item.site_name }}
-  with_items: "{{ sites }}"
-  when: sites
+    - name: Copy the code from repository
+      git:
+        repo: "{{ repository }}"
+        dest: "/home/{{ docker_user }}/containers/"
+        version: "{{ repository_version }}"
+        key_file: "{{ ssh_private_key_path }}"
+
+    - name: Creates .env file
+      template:
+        src: env.j2
+        dest: "/home/{{ docker_user }}/containers/{{ item.site_name }}/.env"
+      with_items: "{{ sites }}"
+      when: sites
+
+    - name: Run the service defined in my project
+      docker_service:
+        project_src: "/home/{{ docker_user }}/containers/{{ item.site_name }}"
+      with_items: "{{ sites }}"
+      when: sites
+  become: yes
+  become_user: "{{ docker_user }}"

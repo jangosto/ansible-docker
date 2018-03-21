@@ -67,13 +67,24 @@
   when: (docker_register_systemd_service and
          docker_register_systemd_service | changed)
 
-- name: Add specific users to "docker" group
+- name: Create user and add to "docker" group
   user:
     name: "{{ docker_user }}"
-    createhome: True
-    groups: "docker"
-    append: True
-  when: docker_users
+    password: "{{ docker_user_password }}"
+    groups:
+      - docker
+      - sudo
+    state: present
+    createhome: yes
+    home: /home/{{ docker_user }}
+
+#- name: Add specific user to "docker" group
+#  user:
+#    name: "{{ docker_user }}"
+#    createhome: True
+#    groups: "docker"
+#    append: True
+#  when: docker_user
 
 - name: Install Docker Compose
   get_url:
