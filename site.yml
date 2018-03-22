@@ -1,13 +1,18 @@
 ---
 
-- name: Deploy web sites with Docker Compose
-  hosts: webservers
+- name: Install python-simplejson in RAW mode
+  hosts: all
   remote_user: root
-  gather_facts: True
+  gather_facts: False
   pre_tasks:
     - name: Installs python-simplejson in RAW mode
       raw: apt-get -y install python-simplejson
       register: apt_messages
     - debug: var=apt_messages
+
+- name: Deploy web sites with Docker Compose
+  hosts: webservers
+  remote_user: root
+  gather_facts: True
   roles:
     - web

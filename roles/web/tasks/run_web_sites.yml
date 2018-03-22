@@ -1,47 +1,76 @@
 ---
 
-- block:
-    - name: Create Docker Compose project directory
-      file:
-        path: "/home/{{ docker_user }}/containers"
-#        owner: jangosto
-        state: directory
-        mode: 0755
-
-    - name: Create .ssh directory
-      file:
-        path: "/home/{{ docker_user }}/.ssh"
-#        owner: jangosto
-        state: directory
-        mode: 0700
-
-    - name: Ensure pub and private keys are present
-      copy:
-        src: "~/.ssh/{{ item }}"
-        dest: "/home/{{ docker_user }}/.ssh/{{ item }}"
-        mode: 0600
-      with_items:
-        - id_rsa.pub
-        - id_rsa
-
-    - name: Copy the code from repository
-      git:
-        repo: "{{ repository }}"
-        dest: "/home/{{ docker_user }}/containers/"
-        version: "{{ repository_version }}"
-        key_file: "{{ ssh_private_key_path }}"
-
-    - name: Creates .env file
-      template:
-        src: env.j2
-        dest: "/home/{{ docker_user }}/containers/{{ item.site_name }}/.env"
-      with_items: "{{ sites }}"
-      when: sites
-
-    - name: Run the service defined in my project
-      docker_service:
-        project_src: "/home/{{ docker_user }}/containers/{{ item.site_name }}"
-      with_items: "{{ sites }}"
-      when: sites
+- name: Create Docker Compose project directory
+  file:
+    path: "/home/{{ docker_user }}/containers"
+    owner: jangosto
+    state: directory
+    mode: 0755
   become: yes
   become_user: "{{ docker_user }}"
+
+- name: Create .ssh directory
+  file:
+    path: "/home/{{ docker_user }}/.ssh"
+    owner: jangosto
+    state: directory
+    mode: 0700
+  become: yes
+  become_user: "{{ docker_user }}"
+
+- name: Ensure pub and private keys are present
+  copy:
+    src: "~/.ssh/{{ item }}"
+    dest: "/home/{{ docker_user }}/.ssh/{{ item }}"
+    mode: 0600
+  become: yes
+  become_user: "{{ docker_user }}"
+  with_items:
+    - id_rsa.pub
+    - id_rsa
+
+- name: Copy the code from repository
+  git:
+    repo: "{{ repository }}"
+    dest: "/home/{{ docker_user }}/containers/"
+    version: "{{ repository_version }}"
+    key_file: "{{ ssh_private_key_path }}"
+    accept_hostkey: yes
+  become: yes
+  become_user: "{{ docker_user }}"
+
+- name: Create Docker network
+  docker_network:
+    name: "{{ network_name }}"
+  become: yes
+  become_user: "{{ docker_user }}"
+
+- name: Creates .env file
+  template:
+    src: env.j2
+    dest: "/home/{{ docker_user }}/containers/{{ item.site_name }}/.env"
+  become: yes
+  become_user: "{{ docker_user }}"
+  with_items: "{{ sites }}"
+  when: sites
+
+- name: Create Symlinks to docker-compose nginx-proxy project dirs
+  file:
+    src: "/var/www/nginx-proxy"
+    dest: "/home/{{ docker_user }}/containers/nginx-proxy"
+    state: link
+
+- name: Create Symlinks to docker-compose webs project dirs
+  file:
+    src: "/var/www/{{ item.site_name }}"
+    dest: "/home/{{ docker_user }}/containers/{{ item.site_name }}"
+    state: link
+  with_items: sites
+
+- name: Run the service defined in my project
+  docker_service:
+    project_src: "/home/{{ docker_user }}/containers/{{ item.site_name }}"
+  become: yes
+  become_user: "{{ docker_user }}"
+  with_items: "{{ sites }}"
+  when: sites
