@@ -75,6 +75,12 @@
     force: yes
   with_items: "{{ sites }}"
 
+- name: Install docker-compose
+  pip:
+    name: docker-compose
+    version: "{{ pip_docker_compose_version }}"
+    state: present
+
 - name: Run the service defined in my project
   docker_service:
     project_src: "/home/{{ docker_user }}/containers/{{ item.site_name }}"

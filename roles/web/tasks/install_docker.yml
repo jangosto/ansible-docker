@@ -104,7 +104,7 @@
 - name: Install docker-py
   pip:
     name: docker-py
-    version: "{{ docker_py_version }}"
+    version: "{{ pip_docker_py_version }}"
     state: present
 
 - name: Create cron tasks for Docker commands
