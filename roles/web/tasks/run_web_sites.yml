@@ -54,18 +54,26 @@
   with_items: "{{ sites }}"
   when: sites
 
+- name: Create www dir
+  file:
+    path: "/var/www"
+    state: directory
+    mode: 0755
+
 - name: Create Symlinks to docker-compose nginx-proxy project dirs
   file:
-    src: "/var/www/nginx-proxy"
-    dest: "/home/{{ docker_user }}/containers/nginx-proxy"
+    src: "/home/{{ docker_user }}/containers/nginx-proxy"
+    dest: "/var/www/nginx-proxy"
     state: link
+    force: yes
 
 - name: Create Symlinks to docker-compose webs project dirs
   file:
-    src: "/var/www/{{ item.site_name }}"
-    dest: "/home/{{ docker_user }}/containers/{{ item.site_name }}"
+    src: "/home/{{ docker_user }}/containers/{{ item.site_name }}"
+    dest: "/var/www/{{ item.site_name }}"
     state: link
-  with_items: sites
+    force: yes
+  with_items: "{{ sites }}"
 
 - name: Run the service defined in my project
   docker_service:

@@ -96,6 +96,17 @@
     mode: "0755"
   when: docker_install_docker_compose
 
+- name: Install pip
+  apt:
+    name: python-pip
+    state: present
+
+- name: Install docker-py
+  pip:
+    name: docker-py
+    version: "{{ docker_py_version }}"
+    state: present
+
 - name: Create cron tasks for Docker commands
   cron:
     name: "{{ item.name }}"
